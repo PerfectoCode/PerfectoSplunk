@@ -1,5 +1,7 @@
 package com.perfecto.splunk;
 
+import java.net.Proxy;
+
 //Creating the Thread local instance of SplunkReporting
 public class ReportingFactory {
 	
@@ -13,8 +15,13 @@ public class ReportingFactory {
 		reporting.set(report);
 	}
 	
-	public static SplunkReporting createInstance(long sla, String splunkHost, int splunkPort, String splunkScheme, String splunkToken, String splunkUser, String splunkPassword) {
-		SplunkReporting reporting = new SplunkReporting(sla, splunkHost, splunkPort, splunkScheme, splunkToken, splunkUser, splunkPassword);
+	public static SplunkReporting createInstance(long sla, String splunkScheme, String splunkHost, String splunkPort,  String splunkToken) {
+		SplunkReporting reporting = new SplunkReporting(sla, splunkScheme, splunkHost, splunkPort,  splunkToken);
+		return reporting;
+	}
+	
+	public static SplunkReporting createInstance(long sla, String splunkScheme, String splunkHost, String splunkPort,  String splunkToken, Proxy proxy) {
+		SplunkReporting reporting = new SplunkReporting(sla, splunkScheme, splunkHost, splunkPort,  splunkToken, proxy);
 		return reporting;
 	}
 }

@@ -1,9 +1,8 @@
 package com.perfecto.splunk;
 
+import java.net.Proxy;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,14 +16,19 @@ public class SplunkReportingCollector extends Reporting {
 	}
 
 	// initializing splunk connection values
-	public SplunkReportingCollector(long sla, String splunkHost, int splunkPort, String splunkScheme,
-			String splunkToken, String splunkUser, String splunkPassword) {
-		super(sla, splunkHost, splunkPort, splunkScheme, splunkToken, splunkUser, splunkPassword);
+	public SplunkReportingCollector(long sla, String splunkScheme, String splunkHost, String splunkPort,
+			String splunkToken) {
+		super(sla, splunkScheme, splunkHost, splunkPort, splunkToken);
+	}
+	
+	public SplunkReportingCollector(long sla, String splunkScheme, String splunkHost, String splunkPort,
+			String splunkToken, Proxy proxy) {
+		super(sla, splunkScheme, splunkHost, splunkPort, splunkToken, proxy);
 	}
 
 	// merges and sorts the various maps to create the json and finally submit
 	// them to splunk
-	public String commitSplunk(String index) throws Exception {
+	public String commitSplunk() throws Exception {
 		int secondaryCount = 1;
 		Gson gson = new GsonBuilder().enableComplexMapKeySerialization().disableHtmlEscaping().serializeNulls()
 				.create();
@@ -61,7 +65,7 @@ public class SplunkReportingCollector extends Reporting {
 		// setting splunk host to null allows for the generation of the Json
 		// without the need of connecting to splunk
 		if (splunk.getSplunkHost() != null) {
-			this.splunk.splunkFeed(jsonReport, index);
+			this.splunk.splunkFeed(jsonReport);
 		}
 
 		// returns the json string for logging or additional tasks

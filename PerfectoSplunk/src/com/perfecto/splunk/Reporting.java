@@ -1,5 +1,7 @@
+
 package com.perfecto.splunk;
 
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -15,10 +17,14 @@ public abstract class Reporting {
 	private long sla = 999999999;
 	public SplunkConnect splunk = null;
 
-	public Reporting(long sla, String splunkHost, int splunkPort, String splunkScheme, String splunkToken,
-			String splunkUser, String splunkPassword) {
+	public Reporting(long sla, String splunkScheme, String splunkHost, String splunkPort, String splunkToken) {
 		setSla(sla);
-		splunk = new SplunkConnect(splunkHost, splunkPort, splunkScheme, splunkToken, splunkUser, splunkPassword);
+		splunk = new SplunkConnect(splunkScheme, splunkHost, splunkPort, splunkToken);
+	}
+	
+	public Reporting(long sla, String splunkScheme, String splunkHost, String splunkPort, String splunkToken, Proxy proxy) {
+		setSla(sla);
+		splunk = new SplunkConnect(splunkScheme, splunkHost, splunkPort, splunkToken, proxy);
 	}
 
 	public long getSla() {
