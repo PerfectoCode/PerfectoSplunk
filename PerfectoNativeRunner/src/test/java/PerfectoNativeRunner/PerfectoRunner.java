@@ -22,30 +22,48 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class PerfectoRunner {
+	private Proxy proxy = null;
+
+	// proxy constructor
+	public PerfectoRunner(Proxy proxy) {
+		this.proxy = proxy;
+	}
+
+	// default constructor
+	public PerfectoRunner() {
+	}
 
 	public enum availableReportOptions {
 		executionId, reportId, scriptName, scriptStatus, deviceId, os, osVersion, model, transactions, reportUrl
 	}
 
-	public static Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
-			String deviceId, Proxy proxy) throws DOMException, Exception {
+	// executes the script and generates the response data
+	public Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
+			String deviceId, int cycles, long waitBetweenCycles) throws DOMException, Exception {
+		HttpClient hc;
+		if (proxy != null) {
+			hc = new HttpClient(proxy);
+		} else {
+			hc = new HttpClient();
+		}
+
 		String executionId = "";
 		String reportId = "";
 
-		HttpClient hc = new HttpClient(proxy);
 		String response = hc.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey="
 				+ scriptKey + ".xml&responseformat=xml&param.DUT=" + deviceId + "&user=" + username + "&password="
 				+ password + "");
 
 		if (response.contains("xml")) {
 			executionId = hc.getXMLValue(response, "executionId");
-			for (int i = 0; i < 1000; i++) {
+
+			for (int i = 0; i < cycles; i++) {
 
 				response = hc.sendRequest("https://" + host + "/services/executions/" + executionId
 						+ "?operation=status&user=" + username + "&password=" + password + "");
 				if (response.contains("xml")) {
 					if (!hc.getJsonValue(response, "status").equals("Completed")) {
-						Thread.sleep(10000);
+						Thread.sleep(waitBetweenCycles);
 					} else {
 						reportId = hc.getJsonValue(response, "reportKey");
 						break;
@@ -68,7 +86,8 @@ public class PerfectoRunner {
 		return testResults;
 	}
 
-	public static Map<String, Object> parseReport(String xml, String executionId, String reportId)
+	// parser for the report and compiles the reporting map
+	public Map<String, Object> parseReport(String xml, String executionId, String reportId)
 			throws DOMException, Exception {
 
 		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();

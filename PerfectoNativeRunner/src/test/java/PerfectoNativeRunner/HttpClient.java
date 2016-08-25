@@ -31,25 +31,28 @@ public class HttpClient {
 	private static final String UTF_8 = "UTF-8";
 	private Proxy proxy;
 
+	// constructor for the Proxy connection
 	public HttpClient(Proxy proxy) {
 		this.proxy = proxy;
 	}
 
+	// default contructor
 	public HttpClient() {
 
 	}
 
+	// makes the api call
 	public String sendRequest(String url) throws IOException, URISyntaxException {
 		URL obj = new URL(url);
 		HttpURLConnection con = null;
 
+		// setting proxy if available
 		if (proxy != null) {
 			con = (HttpURLConnection) obj.openConnection(proxy);
 		} else {
 			con = (HttpURLConnection) obj.openConnection();
 		}
-
-		// optional default is GET
+		System.out.println("Sending GET request to URL : " + obj.toURI());
 		con.setRequestMethod("GET");
 		con.connect();
 
@@ -62,13 +65,13 @@ public class HttpClient {
 			response = getStream(con);
 		}
 
-		System.out.println("\nSending 'GET' request to URL : " + obj.toURI());
 		System.out.println("Response Code : " + responseCode);
 		System.out.println("Response message: " + response.toString());
 
 		return response;
 	}
 
+	// processes errors returned by server
 	private void handleError(HttpURLConnection connection) throws IOException {
 		String msg = "Request failed: ";
 		InputStream errorStream = connection.getErrorStream();
@@ -93,6 +96,7 @@ public class HttpClient {
 		throw new RuntimeException(msg);
 	}
 
+	// gets body of the response
 	private String getStream(HttpURLConnection connection) throws IOException {
 		InputStream inputStream = connection.getInputStream();
 		InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
@@ -114,6 +118,7 @@ public class HttpClient {
 		return response;
 	}
 
+	// parses the xml response body
 	public String getXMLValue(String xml, String node) throws ParserConfigurationException, SAXException, IOException {
 
 		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -122,6 +127,7 @@ public class HttpClient {
 		return parse.getElementsByTagName(node).item(0).getTextContent();
 	}
 
+	// parses the json response body
 	public String getJsonValue(String json, String node) {
 		JSONObject obj = new JSONObject(json);
 		String n = obj.getString(node);
