@@ -3,6 +3,7 @@ package PerfectoNativeRunner;
 import java.awt.List;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,15 +27,12 @@ public class PerfectoRunner {
 		executionId, reportId, scriptName, scriptStatus, deviceId, os, osVersion, model, transactions, reportUrl
 	}
 
-	public static void main(String[] args) throws DOMException, Exception {
-	}
-
 	public static Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
-			String deviceId) throws DOMException, Exception {
+			String deviceId, Proxy proxy) throws DOMException, Exception {
 		String executionId = "";
 		String reportId = "";
 
-		HttpClient hc = new HttpClient();
+		HttpClient hc = new HttpClient(proxy);
 		String response = hc.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey="
 				+ scriptKey + ".xml&responseformat=xml&param.DUT=" + deviceId + "&user=" + username + "&password="
 				+ password + "");

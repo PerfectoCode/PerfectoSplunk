@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.net.URL;
 
@@ -28,10 +29,25 @@ import org.w3c.dom.Element;
 
 public class HttpClient {
 	private static final String UTF_8 = "UTF-8";
+	private Proxy proxy;
 
-	public static String sendRequest(String url) throws IOException, URISyntaxException {
+	public HttpClient(Proxy proxy) {
+		this.proxy = proxy;
+	}
+
+	public HttpClient() {
+
+	}
+
+	public String sendRequest(String url) throws IOException, URISyntaxException {
 		URL obj = new URL(url);
-		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+		HttpURLConnection con = null;
+
+		if (proxy != null) {
+			con = (HttpURLConnection) obj.openConnection(proxy);
+		} else {
+			con = (HttpURLConnection) obj.openConnection();
+		}
 
 		// optional default is GET
 		con.setRequestMethod("GET");
@@ -53,7 +69,7 @@ public class HttpClient {
 		return response;
 	}
 
-	private static void handleError(HttpURLConnection connection) throws IOException {
+	private void handleError(HttpURLConnection connection) throws IOException {
 		String msg = "Request failed: ";
 		InputStream errorStream = connection.getErrorStream();
 		if (errorStream != null) {
@@ -77,7 +93,7 @@ public class HttpClient {
 		throw new RuntimeException(msg);
 	}
 
-	private static String getStream(HttpURLConnection connection) throws IOException {
+	private String getStream(HttpURLConnection connection) throws IOException {
 		InputStream inputStream = connection.getInputStream();
 		InputStreamReader inputStreamReader = new InputStreamReader(inputStream, UTF_8);
 		BufferedReader bufferReader = new BufferedReader(inputStreamReader);
@@ -98,16 +114,15 @@ public class HttpClient {
 		return response;
 	}
 
-	public static String getXMLValue(String xml, String node)
-			throws ParserConfigurationException, SAXException, IOException {
+	public String getXMLValue(String xml, String node) throws ParserConfigurationException, SAXException, IOException {
 
 		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 		Document parse = newDocumentBuilder.parse(new ByteArrayInputStream(xml.getBytes()));
-		
+
 		return parse.getElementsByTagName(node).item(0).getTextContent();
 	}
 
-	public static String getJsonValue(String json, String node) {
+	public String getJsonValue(String json, String node) {
 		JSONObject obj = new JSONObject(json);
 		String n = obj.getString(node);
 		System.out.println(n);
