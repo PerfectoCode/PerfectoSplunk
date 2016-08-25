@@ -1,25 +1,19 @@
 package PerfectoNativeRunner;
 
-import java.awt.List;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.net.Proxy;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.net.URLEncoder;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
+import javax.management.RuntimeErrorException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 public class PerfectoRunner {
 	private Proxy proxy = null;
@@ -39,7 +33,7 @@ public class PerfectoRunner {
 
 	// executes the script and generates the response data
 	public Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
-			String deviceId, int cycles, long waitBetweenCycles) throws DOMException, Exception {
+			String deviceId,String additionalParams, int cycles, long waitBetweenCycles) throws DOMException, Exception {
 		HttpClient hc;
 		if (proxy != null) {
 			hc = new HttpClient(proxy);
@@ -52,7 +46,7 @@ public class PerfectoRunner {
 
 		String response = hc.sendRequest("https://" + host + "/services/executions?operation=execute&scriptkey="
 				+ scriptKey + ".xml&responseformat=xml&param.DUT=" + deviceId + "&user=" + username + "&password="
-				+ password + "");
+				+ password + additionalParams);
 
 		if (response.contains("xml")) {
 			executionId = hc.getXMLValue(response, "executionId");
@@ -68,6 +62,12 @@ public class PerfectoRunner {
 						reportId = hc.getJsonValue(response, "reportKey");
 						break;
 					}
+				}
+				if (i+1>=cycles)
+				{
+					String msg = "Exited checking script status early due to script execution exceeding cycles limit.  Cycles limit currently set to " + cycles + ", it is recommended to increase your cycle count and try again.";
+					System.out.println(msg);
+					throw new Exception();
 				}
 			}
 		}

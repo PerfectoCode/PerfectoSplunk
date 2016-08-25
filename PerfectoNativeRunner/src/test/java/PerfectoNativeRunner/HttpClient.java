@@ -93,6 +93,7 @@ public class HttpClient {
 				bufferReader.close();
 			}
 		}
+		System.out.println(msg);
 		throw new RuntimeException(msg);
 	}
 
