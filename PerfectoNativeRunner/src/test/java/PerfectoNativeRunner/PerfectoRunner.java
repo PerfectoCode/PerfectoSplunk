@@ -1,19 +1,29 @@
 package PerfectoNativeRunner;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.Proxy;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.management.RuntimeErrorException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class PerfectoRunner {
 	private Proxy proxy = null;
@@ -28,12 +38,13 @@ public class PerfectoRunner {
 	}
 
 	public enum availableReportOptions {
-		executionId, reportId, scriptName, scriptStatus, deviceId, os, osVersion, model, transactions, reportUrl
+		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl
 	}
 
 	// executes the script and generates the response data
 	public Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
-			String deviceId,String additionalParams, int cycles, long waitBetweenCycles) throws DOMException, Exception {
+			String deviceId, String additionalParams, int cycles, long waitBetweenCycles)
+			throws DOMException, Exception {
 		HttpClient hc;
 		if (proxy != null) {
 			hc = new HttpClient(proxy);
@@ -63,9 +74,9 @@ public class PerfectoRunner {
 						break;
 					}
 				}
-				if (i+1>=cycles)
-				{
-					String msg = "Exited checking script status early due to script execution exceeding cycles limit.  Cycles limit currently set to " + cycles + ", it is recommended to increase your cycle count and try again.";
+				if (i + 1 >= cycles) {
+					String msg = "Exited checking script status early due to script execution exceeding cycles limit.  Cycles limit currently set to "
+							+ cycles + ", it is recommended to increase your cycle count and try again.";
 					System.out.println(msg);
 					throw new Exception();
 				}
@@ -124,52 +135,54 @@ public class PerfectoRunner {
 			}
 		}
 
-		NodeList handsets = parse.getElementsByTagName("handset");
-
-		Element handsetsSub = (Element) handsets.item(0);
-
-		String deviceId = "";
-		String os = "";
-		String model = "";
-		String osVersion = "";
-
-		if (xml.contains("displayName=\"Phone Number\"")) {
-
-			deviceId = handsetsSub.getElementsByTagName("value").item(1).getTextContent();
-			os = handsetsSub.getElementsByTagName("value").item(16).getTextContent();
-			model = handsetsSub.getElementsByTagName("value").item(12).getTextContent();
-			osVersion = handsetsSub.getElementsByTagName("value").item(17).getTextContent();
-		} else {
-			deviceId = handsetsSub.getElementsByTagName("value").item(1).getTextContent();
-			os = handsetsSub.getElementsByTagName("value").item(14).getTextContent();
-			model = handsetsSub.getElementsByTagName("value").item(10).getTextContent();
-			osVersion = handsetsSub.getElementsByTagName("value").item(15).getTextContent();
-		}
-
 		testResults.put("executionId", executionId);
 		testResults.put("reportId", reportId);
 		testResults.put("scriptName", scriptName);
 		testResults.put("scriptStatus", scriptStatus);
-		testResults.put("deviceId", deviceId);
-		testResults.put("os", os);
-		testResults.put("osVersion", osVersion);
-		testResults.put("model", model);
+		testResults.put("deviceId", getXPathValue(xml, "//*[@displayName='Id']/following-sibling::value"));
+		testResults.put("location", getXPathValue(xml, "//*[@displayName='Location']/following-sibling::value"));
+		testResults.put("manufacturer",
+				getXPathValue(xml, "//*[@displayName='Manufacturer']/following-sibling::value"));
+		testResults.put("model", getXPathValue(xml, "//*[@displayName='Model']/following-sibling::value"));
+		testResults.put("firmware", getXPathValue(xml, "//*[@displayName='Firmware']/following-sibling::value"));
+		testResults.put("description", getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
+		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
+		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
 
 		// Transactions
 		Map<String, String> transactions = new HashMap<String, String>();
 		String transName = "";
 		String transTimer = "";
-		NodeList nodeL = parse.getElementsByTagName("description");
+		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
+
 		for (int i = 0; i < nodeL.getLength(); i++) {
 			nText = nodeL.item(i).getTextContent();
-			if (nText.contains("Value of ux timer")) {
-				transName = nText.split("Value of ux timer ")[1].split(" is ")[0];
-				transTimer = nText.split(" is ")[1].split("milliseconds")[0];
-				transactions.put(transName, transTimer);
-			}
+			transName = nText.split("Value of ux timer ")[1].split(" is ")[0];
+			transTimer = nText.split(" is ")[1].split("milliseconds")[0];
+			transactions.put(transName, transTimer);
+
 		}
+
 		testResults.put("transactions", transactions);
 
 		return testResults;
+	}
+
+	public String getXPathValue(String xml, String XpathString)
+			throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
+
+		NodeList result = getXPathList(xml, XpathString);
+		return result.item(1).getTextContent();
+	}
+
+	public NodeList getXPathList(String xml, String XpathString)
+			throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
+		DocumentBuilderFactory domFactory = DocumentBuilderFactory.newInstance();
+		domFactory.setNamespaceAware(true);
+		DocumentBuilder builder = domFactory.newDocumentBuilder();
+		Document doc = builder.parse(new ByteArrayInputStream(xml.getBytes()));
+		XPath xpath = XPathFactory.newInstance().newXPath();
+		XPathExpression expr = xpath.compile(XpathString);
+		return (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 	}
 }
