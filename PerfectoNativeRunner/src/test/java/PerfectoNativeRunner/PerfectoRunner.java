@@ -45,7 +45,7 @@ public class PerfectoRunner {
 	}
 
 	public enum availableReportOptions {
-		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport, variables
+		scriptTimerElapsed, scriptTimerDevice, scriptTimerSystem, scriptTimerUx, scriptStartTime, scriptEndTime, executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport, variables
 	}
 
 	public String getXMLReport(String host, String username, String password, String reportKey)
@@ -63,8 +63,8 @@ public class PerfectoRunner {
 	}
 
 	// executes the script and generates the response data
-	public Map<String, Object> executeScript(String host, String username, String password, String scriptKey,
-			String deviceId, String additionalParams, int cycles, long waitBetweenCycles)
+	public Map<availableReportOptions, Object> executeScript(String host, String username, String password,
+			String scriptKey, String deviceId, String additionalParams, int cycles, long waitBetweenCycles)
 			throws DOMException, Exception {
 		HttpClient hc;
 		if (proxy != null) {
@@ -107,10 +107,10 @@ public class PerfectoRunner {
 		response = hc.sendRequest("https://" + host + "/services/reports/" + reportId + "?operation=download&user="
 				+ username + "&password=" + password + "&responseformat=xml");
 
-		Map<String, Object> testResults = new HashMap<String, Object>();
+		Map<availableReportOptions, Object> testResults = new HashMap<availableReportOptions, Object>();
 
-		testResults = parseReportExecution(response, executionId, reportId);
-		testResults.put("reportUrl",
+		testResults = parseReport(response);
+		testResults.put(availableReportOptions.reportUrl,
 				"https://" + host + "/nexperience/Report.html?reportId=SYSTEM%3Adesigns%2Freport&key="
 						+ reportId.replace(".xml", "") + "%2Exml&liveUrl=rtmp%3A%2F%2F" + host.replace(".", "%2E")
 						+ "%2Fengine&appUrl=https%3A%2F%2F" + host.replace(".", "%2E") + "%2Fnexperience&username="
@@ -119,13 +119,15 @@ public class PerfectoRunner {
 	}
 
 	// parser for the report and compiles the reporting map
-	private Map<String, Object> parseReportExecution(String xml, String executionId, String reportId)
+	public Map<availableReportOptions, Object> parseReport(String xml)
 			throws DOMException, Exception {
 
 		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 		Document parse = newDocumentBuilder.parse(new ByteArrayInputStream(xml.getBytes()));
-		Map<String, Object> testResults = new HashMap<String, Object>();
+		Map<availableReportOptions, Object> testResults = new HashMap<availableReportOptions, Object>();
 		String nText = "";
+		String executionId = getXPathValue(xml, "execution/info/id");
+		String reportId = getXPathValue(xml, "execution/info/dataItems/dataItem[@label=\"report\"]/key");
 
 		// Miscellaneous
 		String scriptName = parse.getElementsByTagName("name").item(0).getTextContent();
@@ -138,10 +140,10 @@ public class PerfectoRunner {
 
 		if (statusSub.getElementsByTagName("success").item(0).getTextContent().equals("true")) {
 			scriptStatus = "Pass";
-			testResults.put("scriptStatus", scriptStatus);
+			testResults.put(availableReportOptions.scriptStatus, scriptStatus);
 		} else {
 			scriptStatus = "Fail";
-			testResults.put("scriptStatus", scriptStatus);
+			testResults.put(availableReportOptions.scriptStatus, scriptStatus);
 			if (!statusSub.getElementsByTagName("code").item(0).getTextContent().equals("CompletedWithErrors"))
 
 			{
@@ -156,27 +158,44 @@ public class PerfectoRunner {
 			}
 		}
 
-		testResults.put("executionId", executionId);
-		testResults.put("reportId", reportId);
-		testResults.put("scriptName", scriptName);
-		testResults.put("scriptStatus", scriptStatus);
-		testResults.put("deviceId", getXPathValue(xml, "//*[@displayName='Id']/following-sibling::value"));
-		testResults.put("location", getXPathValue(xml, "//*[@displayName='Location']/following-sibling::value"));
-		testResults.put("manufacturer",
+		testResults.put(availableReportOptions.executionId, executionId);
+		testResults.put(availableReportOptions.reportId, reportId);
+		testResults.put(availableReportOptions.scriptStartTime, getXPathValue(xml, "execution/info/times/flowTimes/start/millis"));
+		testResults.put(availableReportOptions.scriptEndTime, getXPathValue(xml, "execution/info/times/flowTimes/end/millis"));
+		
+		
+		testResults.put(availableReportOptions.scriptTimerElapsed, getXPathValue(xml, "execution/output/timers/timer/time[@label=\"elapsed\"]"));
+		testResults.put(availableReportOptions.scriptTimerSystem, getXPathValue(xml, "execution/output/timers/timer/time[@label=\"system\"]"));
+		testResults.put(availableReportOptions.scriptTimerDevice, getXPathValue(xml, "execution/output/timers/timer/time[@label=\"device\"]"));
+		testResults.put(availableReportOptions.scriptTimerUx, getXPathValue(xml, "execution/output/timers/timer/time[@label=\"ux\"]"));
+		
+		
+		testResults.put(availableReportOptions.scriptName, scriptName);
+		testResults.put(availableReportOptions.scriptStatus, scriptStatus);
+		testResults.put(availableReportOptions.deviceId,
+				getXPathValue(xml, "//*[@displayName='Id']/following-sibling::value"));
+		testResults.put(availableReportOptions.location,
+				getXPathValue(xml, "//*[@displayName='Location']/following-sibling::value"));
+		testResults.put(availableReportOptions.manufacturer,
 				getXPathValue(xml, "//*[@displayName='Manufacturer']/following-sibling::value"));
-		testResults.put("model", getXPathValue(xml, "//*[@displayName='Model']/following-sibling::value"));
-		testResults.put("firmware", getXPathValue(xml, "//*[@displayName='Firmware']/following-sibling::value"));
-		testResults.put("description", getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
-		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
-		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
-		testResults.put("xmlReport", xml);
+		testResults.put(availableReportOptions.model,
+				getXPathValue(xml, "//*[@displayName='Model']/following-sibling::value"));
+		testResults.put(availableReportOptions.firmware,
+				getXPathValue(xml, "//*[@displayName='Firmware']/following-sibling::value"));
+		testResults.put(availableReportOptions.description,
+				getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
+		testResults.put(availableReportOptions.os,
+				getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
+		testResults.put(availableReportOptions.osVersion,
+				getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
+		testResults.put(availableReportOptions.xmlReport, xml);
 
 		// Transactions
 		Map<String, String> transactions = new HashMap<String, String>();
 		String transName = "";
 		String transTimer = "";
 		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
-		NodeList nodeL2=null;
+		NodeList nodeL2 = null;
 
 		for (int i = 0; i < nodeL.getLength(); i++) {
 			nText = nodeL.item(i).getTextContent();
@@ -186,92 +205,25 @@ public class PerfectoRunner {
 
 		}
 
-		testResults.put("transactions", transactions);
-		
+		testResults.put(availableReportOptions.transactions, transactions);
+
 		Map<String, String> variables = new HashMap<String, String>();
-		
+
 		nodeL = getXPathList(xml, "//input/variables/variable/name");
 		nodeL2 = getXPathList(xml, "//input/variables/variable/value");
-		String name="";
-		String value="";
+		String name = "";
+		String value = "";
 		for (int i = 0; i < nodeL.getLength(); i++) {
 			name = nodeL.item(i).getTextContent();
-			value = nodeL2.item(i).getTextContent();			
+			value = nodeL2.item(i).getTextContent();
 			variables.put(name, value);
 		}
-		
-		testResults.put("variables", variables);
+
+		testResults.put(availableReportOptions.variables, variables);
 
 		return testResults;
 	}
 
-	// parser for the report and compiles the reporting map
-	public Map<String, Object> parseReport(String xml) throws DOMException, Exception {
-
-		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		Document parse = newDocumentBuilder.parse(new ByteArrayInputStream(xml.getBytes()));
-		Map<String, Object> testResults = new HashMap<String, Object>();
-		String nText = "";
-
-		// Miscellaneous
-		String scriptName = parse.getElementsByTagName("name").item(0).getTextContent();
-
-		NodeList status = parse.getElementsByTagName("status");
-
-		Element statusSub = (Element) status.item(0);
-
-		String scriptStatus = "";
-
-		if (statusSub.getElementsByTagName("success").item(0).getTextContent().equals("true")) {
-			scriptStatus = "Pass";
-			testResults.put("scriptStatus", scriptStatus);
-		} else {
-			scriptStatus = "Fail";
-			testResults.put("scriptStatus", scriptStatus);
-			if (!statusSub.getElementsByTagName("code").item(0).getTextContent().equals("CompletedWithErrors"))
-
-			{
-				if (!statusSub.getElementsByTagName("code").item(0).getTextContent().equals("Failed")) {
-
-					if (!statusSub.getElementsByTagName("failedActions").equals("0")) {
-						throw new Exception("ScriptName:" + scriptName + " ::: exception: Exeception "
-								+ statusSub.getElementsByTagName("description").item(0).getTextContent());
-					}
-				}
-			}
-		}
-
-		testResults.put("scriptName", scriptName);
-		testResults.put("scriptStatus", scriptStatus);
-		testResults.put("deviceId", getXPathValue(xml, "//*[@displayName='Id']/following-sibling::value"));
-		testResults.put("location", getXPathValue(xml, "//*[@displayName='Location']/following-sibling::value"));
-		testResults.put("manufacturer",
-				getXPathValue(xml, "//*[@displayName='Manufacturer']/following-sibling::value"));
-		testResults.put("model", getXPathValue(xml, "//*[@displayName='Model']/following-sibling::value"));
-		testResults.put("firmware", getXPathValue(xml, "//*[@displayName='Firmware']/following-sibling::value"));
-		testResults.put("description", getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
-		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
-		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
-		testResults.put("xmlReport", xml);
-
-		// Transactions
-		Map<String, String> transactions = new HashMap<String, String>();
-		String transName = "";
-		String transTimer = "";
-		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
-
-		for (int i = 0; i < nodeL.getLength(); i++) {
-			nText = nodeL.item(i).getTextContent();
-			transName = nText.split("Value of ux timer ")[1].split(" is ")[0];
-			transTimer = nText.split(" is ")[1].split("milliseconds")[0];
-			transactions.put(transName, transTimer);
-
-		}
-
-		testResults.put("transactions", transactions);
-
-		return testResults;
-	}
 
 	public String getXPathValue(String xml, String XpathString)
 			throws ParserConfigurationException, SAXException, IOException, XPathExpressionException {
