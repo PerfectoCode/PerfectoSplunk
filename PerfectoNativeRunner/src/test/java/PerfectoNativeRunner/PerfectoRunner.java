@@ -1,15 +1,15 @@
 package PerfectoNativeRunner;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.Proxy;
-import java.net.URLEncoder;
+import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import javax.management.RuntimeErrorException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -25,6 +25,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
+
 public class PerfectoRunner {
 	private Proxy proxy = null;
 
@@ -39,6 +46,20 @@ public class PerfectoRunner {
 
 	public enum availableReportOptions {
 		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport
+	}
+
+	public String getXMLReport(String host, String username, String password, String reportKey)
+			throws IOException, URISyntaxException {
+		HttpClient hc;
+		if (proxy != null) {
+			hc = new HttpClient(proxy);
+		} else {
+			hc = new HttpClient();
+		}
+
+		String response = hc.sendRequest("https://" + host + "/services/reports/" + reportKey.replace(" ", "%20")
+				+ "?operation=download&user=" + username + "&password=" + password + "&responseformat=xml");
+		return response;
 	}
 
 	// executes the script and generates the response data
@@ -88,7 +109,7 @@ public class PerfectoRunner {
 
 		Map<String, Object> testResults = new HashMap<String, Object>();
 
-		testResults = parseReport(response, executionId, reportId);
+		testResults = parseReportExecution(response, executionId, reportId);
 		testResults.put("reportUrl",
 				"https://" + host + "/nexperience/Report.html?reportId=SYSTEM%3Adesigns%2Freport&key="
 						+ reportId.replace(".xml", "") + "%2Exml&liveUrl=rtmp%3A%2F%2F" + host.replace(".", "%2E")
@@ -98,7 +119,7 @@ public class PerfectoRunner {
 	}
 
 	// parser for the report and compiles the reporting map
-	public Map<String, Object> parseReport(String xml, String executionId, String reportId)
+	private Map<String, Object> parseReportExecution(String xml, String executionId, String reportId)
 			throws DOMException, Exception {
 
 		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -149,7 +170,75 @@ public class PerfectoRunner {
 		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
 		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
 		testResults.put("xmlReport", xml);
-		
+
+		// Transactions
+		Map<String, String> transactions = new HashMap<String, String>();
+		String transName = "";
+		String transTimer = "";
+		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
+
+		for (int i = 0; i < nodeL.getLength(); i++) {
+			nText = nodeL.item(i).getTextContent();
+			transName = nText.split("Value of ux timer ")[1].split(" is ")[0];
+			transTimer = nText.split(" is ")[1].split("milliseconds")[0];
+			transactions.put(transName, transTimer);
+
+		}
+
+		testResults.put("transactions", transactions);
+
+		return testResults;
+	}
+
+	// parser for the report and compiles the reporting map
+	public Map<String, Object> parseReport(String xml) throws DOMException, Exception {
+
+		DocumentBuilder newDocumentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		Document parse = newDocumentBuilder.parse(new ByteArrayInputStream(xml.getBytes()));
+		Map<String, Object> testResults = new HashMap<String, Object>();
+		String nText = "";
+
+		// Miscellaneous
+		String scriptName = parse.getElementsByTagName("name").item(0).getTextContent();
+
+		NodeList status = parse.getElementsByTagName("status");
+
+		Element statusSub = (Element) status.item(0);
+
+		String scriptStatus = "";
+
+		if (statusSub.getElementsByTagName("success").item(0).getTextContent().equals("true")) {
+			scriptStatus = "Pass";
+			testResults.put("scriptStatus", scriptStatus);
+		} else {
+			scriptStatus = "Fail";
+			testResults.put("scriptStatus", scriptStatus);
+			if (!statusSub.getElementsByTagName("code").item(0).getTextContent().equals("CompletedWithErrors"))
+
+			{
+				if (!statusSub.getElementsByTagName("code").item(0).getTextContent().equals("Failed")) {
+
+					if (!statusSub.getElementsByTagName("failedActions").equals("0")) {
+						throw new Exception("ScriptName:" + scriptName + " ::: exception: Exeception "
+								+ statusSub.getElementsByTagName("description").item(0).getTextContent());
+					}
+				}
+			}
+		}
+
+		testResults.put("scriptName", scriptName);
+		testResults.put("scriptStatus", scriptStatus);
+		testResults.put("deviceId", getXPathValue(xml, "//*[@displayName='Id']/following-sibling::value"));
+		testResults.put("location", getXPathValue(xml, "//*[@displayName='Location']/following-sibling::value"));
+		testResults.put("manufacturer",
+				getXPathValue(xml, "//*[@displayName='Manufacturer']/following-sibling::value"));
+		testResults.put("model", getXPathValue(xml, "//*[@displayName='Model']/following-sibling::value"));
+		testResults.put("firmware", getXPathValue(xml, "//*[@displayName='Firmware']/following-sibling::value"));
+		testResults.put("description", getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
+		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
+		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
+		testResults.put("xmlReport", xml);
+
 		// Transactions
 		Map<String, String> transactions = new HashMap<String, String>();
 		String transName = "";
@@ -186,4 +275,29 @@ public class PerfectoRunner {
 		XPathExpression expr = xpath.compile(XpathString);
 		return (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 	}
+
+	public String CSVToJson(File in, File out) throws IOException {
+		List<Map<?, ?>> data = readObjectsFromCsv(in);
+		return writeAsJson(data, out);
+	}
+
+	public List<Map<?, ?>> readObjectsFromCsv(File file) throws IOException {
+		CsvSchema bootstrap = CsvSchema.emptySchema().withHeader();
+		CsvMapper csvMapper = new CsvMapper();
+		MappingIterator<Map<?, ?>> mappingIterator = csvMapper.reader(Map.class).with(bootstrap).readValues(file);
+
+		return mappingIterator.readAll();
+	}
+
+	public String writeAsJson(List<Map<?, ?>> data, File file) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.writeValue(file, data);
+		return readAsJson(data);
+	}
+
+	public String readAsJson(List<Map<?, ?>> data) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(data);
+	}
+
 }
