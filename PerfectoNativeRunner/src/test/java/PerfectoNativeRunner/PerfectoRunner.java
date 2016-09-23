@@ -38,7 +38,7 @@ public class PerfectoRunner {
 	}
 
 	public enum availableReportOptions {
-		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl
+		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport
 	}
 
 	// executes the script and generates the response data
@@ -148,7 +148,8 @@ public class PerfectoRunner {
 		testResults.put("description", getXPathValue(xml, "//*[@displayName='Description']/following-sibling::value"));
 		testResults.put("os", getXPathValue(xml, "//*[@displayName='OS']/following-sibling::value"));
 		testResults.put("osVersion", getXPathValue(xml, "//*[@displayName='OS Version']/following-sibling::value"));
-
+		testResults.put("xmlReport", xml);
+		
 		// Transactions
 		Map<String, String> transactions = new HashMap<String, String>();
 		String transName = "";
