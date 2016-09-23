@@ -45,7 +45,7 @@ public class PerfectoRunner {
 	}
 
 	public enum availableReportOptions {
-		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport
+		executionId, reportId, scriptName, scriptStatus, deviceId, location, manufacturer, model, firmware, description, os, osVersion, transactions, reportUrl, xmlReport, variables
 	}
 
 	public String getXMLReport(String host, String username, String password, String reportKey)
@@ -176,6 +176,7 @@ public class PerfectoRunner {
 		String transName = "";
 		String transTimer = "";
 		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
+		NodeList nodeL2=null;
 
 		for (int i = 0; i < nodeL.getLength(); i++) {
 			nText = nodeL.item(i).getTextContent();
@@ -186,6 +187,20 @@ public class PerfectoRunner {
 		}
 
 		testResults.put("transactions", transactions);
+		
+		Map<String, String> variables = new HashMap<String, String>();
+		
+		nodeL = getXPathList(xml, "//input/variables/variable/name");
+		nodeL2 = getXPathList(xml, "//input/variables/variable/value");
+		String name="";
+		String value="";
+		for (int i = 0; i < nodeL.getLength(); i++) {
+			name = nodeL.item(i).getTextContent();
+			value = nodeL2.item(i).getTextContent();			
+			variables.put(name, value);
+		}
+		
+		testResults.put("variables", variables);
 
 		return testResults;
 	}
