@@ -202,13 +202,14 @@ public class PerfectoRunner {
 		String transName = "";
 		String transTimer = "";
 		String transSuccess="";
-		NodeList nodeL = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]");
-		NodeList nodeL2 = getXPathList(xml, "//description[contains(text(),'Value of ux timer')]/preceding-sibling::success");
-
+		NodeList nodeL = getXPathList(xml, "//description[contains(text(),\"Validation\") and contains(text(),\"timer\")]/parent::status/parent::output/following-sibling::parameters/parameter/name[@displayName=\"Timer ID\"]/following-sibling::value");
+		NodeList nodeL2 = getXPathList(xml, "//description[contains(text(),\"Validation\") and contains(text(),\"timer\")]/preceding-sibling::success");
+		NodeList nodeL3 = getXPathList(xml, "//description[contains(text(),\"Validation\") and contains(text(),\"timer\")]/parent::status/parent::output/preceding-sibling::info/dataItems/dataItem[@label=\"actual\"]/value");
+		
 		for (int i = 0; i < nodeL.getLength(); i++) {
-			nText = nodeL.item(i).getTextContent();
-			transName = nText.split("Value of ux timer ")[1].split(" is ")[0];
-			transTimer = nText.split(" is ")[1].split("milliseconds")[0];
+			
+			transName = nodeL.item(i).getTextContent();
+			transTimer = nodeL3.item(i).getTextContent();
 			transSuccess=nodeL2.item(i).getTextContent();
 			transactions.put(transName, transTimer, transSuccess);
 
