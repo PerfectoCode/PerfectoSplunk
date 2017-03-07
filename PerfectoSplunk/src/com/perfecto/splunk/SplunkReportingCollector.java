@@ -47,6 +47,9 @@ public class SplunkReportingCollector extends Reporting {
 			} else if (jsonCompare.contains("\"testStatus\":\"Fail\"")) {
 				reportFinal.put("Secondary" + secondaryCount, oldValue);
 				secondaryCount = secondaryCount + 1;
+			} else if (jsonCompare.contains("\"testStatus\":\"Skip\"")) {
+				reportFinal.put("Secondary" + secondaryCount, oldValue);
+				secondaryCount = secondaryCount + 1;
 			} else if (jsonCompare.contains("\"performanceStatus\":\"Fail\"")) {
 				reportFinal.put("Secondary" + secondaryCount, oldValue);
 				secondaryCount = secondaryCount + 1;
