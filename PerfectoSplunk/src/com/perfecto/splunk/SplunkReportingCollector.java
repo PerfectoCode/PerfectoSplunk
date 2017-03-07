@@ -59,6 +59,11 @@ public class SplunkReportingCollector extends Reporting {
 				reportFinal.put("Secondary", oldValue);
 				secondaryCount = secondaryCount + 1;
 			}
+			
+			if (jsonCompare.contains("\"testStatus\":\"Skip\"")) {
+				reportFinal.put("Secondary" + secondaryCount, oldValue);
+				secondaryCount = secondaryCount + 1;
+			}
 		}
 
 		// converts the maps to a final readable json string
