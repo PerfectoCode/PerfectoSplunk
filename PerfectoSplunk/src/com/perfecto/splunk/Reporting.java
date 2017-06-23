@@ -65,6 +65,8 @@ public abstract class Reporting {
 		stepDetails.put("stepDescription", text);
 		stepDetails.put("stepTimer", 0);
 		stepDetails.put("stepStartTimestamp", new Date(System.currentTimeMillis()));
+		stepDetails.put("stepSLA", getSla());
+		stepDetails.put("stepTransactionStatus", "Fail");
 		stepCollector.add(stepDetails);
 	}
 
@@ -107,6 +109,8 @@ public abstract class Reporting {
 			stepDetails.put("stepTimer", time);
 			stepDetails.put("stepStartTimestamp", stepStartTimestamp);
 			stepDetails.put("stepEndTimestamp", new Date(System.currentTimeMillis()));
+			stepDetails.put("stepSLA", getSla());
+			stepDetails.put("stepTransactionStatus", "Pass");
 			stepCollector.add(stepDetails);
 		}
 	}
