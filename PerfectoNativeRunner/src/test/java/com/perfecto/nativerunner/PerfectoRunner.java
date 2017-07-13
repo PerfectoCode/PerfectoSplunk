@@ -1,4 +1,4 @@
-package PerfectoNativeRunner;
+package com.perfecto.nativerunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
