@@ -108,6 +108,12 @@ public class SplunkConnect {
 
 		try {
 			HttpURLConnection con = null;
+			
+			
+			
+			//HttpsTrustManager.allowAllSSL();
+			
+			
 			if (proxy != null) {
 				con = (HttpURLConnection) obj.openConnection(proxy);
 			} else {
@@ -117,6 +123,8 @@ public class SplunkConnect {
 			con.setDoOutput(true);
 
 			con.setRequestProperty("Authorization", "Splunk " + splunkToken);
+			
+			
 
 			con.setRequestMethod("POST");
 
