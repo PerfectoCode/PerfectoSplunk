@@ -23,6 +23,7 @@ public class SplunkConnect {
 	private String splunkHost;
 	private String splunkPort;
 	private String splunkToken;
+	private String splunkChannel;
 	private Proxy proxy = null;
 
 	private final String UTF_8 = "UTF-8";
@@ -45,6 +46,14 @@ public class SplunkConnect {
 
 	public void setSplunkScheme(String splunkScheme) {
 		this.splunkScheme = splunkScheme;
+	}
+
+	public void setSplunkChannel(String splunkChannel) {
+		this.splunkChannel = splunkChannel;
+	}
+
+	public String getSplunkChannel() {
+		return splunkChannel;
 	}
 
 	public String getSplunkPort() {
@@ -80,6 +89,27 @@ public class SplunkConnect {
 		this.proxy = proxy;
 	}
 
+	// Set the splunk instance connection values
+	public SplunkConnect(String splunkScheme, String splunkHost, String splunkPort, String splunkToken,
+			String splunkChannel) {
+		this.splunkScheme = splunkScheme;
+		this.splunkHost = splunkHost;
+		this.splunkPort = splunkPort;
+		this.splunkToken = splunkToken;
+		this.splunkChannel = splunkChannel;
+	}
+
+	// Set the splunk instance connection values
+	public SplunkConnect(String splunkScheme, String splunkHost, String splunkPort, String splunkToken,
+			String splunkChannel, Proxy proxy) {
+		this.splunkScheme = splunkScheme;
+		this.splunkHost = splunkHost;
+		this.splunkPort = splunkPort;
+		this.splunkToken = splunkToken;
+		this.splunkChannel = splunkChannel;
+		this.proxy = proxy;
+	}
+
 	public void main(String[] args) throws Exception {
 	}
 
@@ -108,12 +138,9 @@ public class SplunkConnect {
 
 		try {
 			HttpURLConnection con = null;
-			
-			
-			
-			//HttpsTrustManager.allowAllSSL();
-			
-			
+
+			// HttpsTrustManager.allowAllSSL();
+
 			if (proxy != null) {
 				con = (HttpURLConnection) obj.openConnection(proxy);
 			} else {
@@ -124,7 +151,10 @@ public class SplunkConnect {
 
 			con.setRequestProperty("Authorization", "Splunk " + splunkToken);
 			
-			
+			if(splunkChannel != null)
+			{
+				con.setRequestProperty("X-Splunk-Request-Channel", splunkChannel);
+			}
 
 			con.setRequestMethod("POST");
 

@@ -25,6 +25,16 @@ public class SplunkReportingCollector extends Reporting {
 			String splunkToken, Proxy proxy) {
 		super(sla, splunkScheme, splunkHost, splunkPort, splunkToken, proxy);
 	}
+	
+	public SplunkReportingCollector(long sla, String splunkScheme, String splunkHost, String splunkPort,
+			String splunkToken, String splunkChannel) {
+		super(sla, splunkScheme, splunkHost, splunkPort, splunkToken, splunkChannel);
+	}
+	
+	public SplunkReportingCollector(long sla, String splunkScheme, String splunkHost, String splunkPort,
+			String splunkToken, String splunkChannel, Proxy proxy) {
+		super(sla, splunkScheme, splunkHost, splunkPort, splunkToken, splunkChannel, proxy);
+	}
 
 	// merges and sorts the various maps to create the json and finally submit
 	// them to splunk

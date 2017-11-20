@@ -24,4 +24,19 @@ public class ReportingCollectorFactory {
 		SplunkReportingCollector reporting = new SplunkReportingCollector(sla, splunkScheme, splunkHost, splunkPort,  splunkToken, proxy);
 		return reporting;
 	}
+	
+	
+	
+	public static SplunkReportingCollector createInstance(long sla, String splunkScheme, String splunkHost, String splunkPort,  String splunkToken, String splunkChannel) {
+		SplunkReportingCollector reporting = new SplunkReportingCollector(sla, splunkScheme, splunkHost, splunkPort,  splunkToken, splunkChannel);
+		return reporting;
+	}
+	
+	public static SplunkReportingCollector createInstance(long sla, String splunkScheme, String splunkHost, String splunkPort,  String splunkToken, String splunkChannel, Proxy proxy) {
+		SplunkReportingCollector reporting = new SplunkReportingCollector(sla, splunkScheme, splunkHost, splunkPort,  splunkToken, splunkChannel, proxy);
+		return reporting;
+	}
+	
+	
+	
 }

@@ -26,6 +26,16 @@ public abstract class Reporting {
 		setSla(sla);
 		splunk = new SplunkConnect(splunkScheme, splunkHost, splunkPort, splunkToken, proxy);
 	}
+	
+	public Reporting(long sla, String splunkScheme, String splunkHost, String splunkPort, String splunkToken, String splunkChannel) {
+		setSla(sla);
+		splunk = new SplunkConnect(splunkScheme, splunkHost, splunkPort, splunkToken, splunkChannel);
+	}
+	
+	public Reporting(long sla, String splunkScheme, String splunkHost, String splunkPort, String splunkToken, String splunkChannel, Proxy proxy) {
+		setSla(sla);
+		splunk = new SplunkConnect(splunkScheme, splunkHost, splunkPort, splunkToken, splunkChannel, proxy);
+	}
 
 	public long getSla() {
 		return this.sla;
